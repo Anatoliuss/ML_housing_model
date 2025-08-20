@@ -286,7 +286,7 @@ def main():
     final_pipe.fit(X, np.log1p(y.values))
     joblib.dump(final_pipe, os.path.join(args.out_dir, "final_model.pkl"))
 
-    # 10) predict Kaggle test and write submission
+    #predict Kaggle test and write submission
     test_ids = test_df["Id"].values
     test_pred_log = final_pipe.predict(test_df)
     test_pred = np.expm1(test_pred_log)

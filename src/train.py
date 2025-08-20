@@ -26,8 +26,6 @@ from utils import (
     plot_residuals,
     print_versions,
 )
-
-
 def try_load_boston(data_path: str) -> Tuple[pd.DataFrame, pd.Series]:
     """
     Load Boston Housing from OpenML if possible; else from local CSV.
