@@ -41,7 +41,6 @@ def try_load_boston(data_path: str) -> Tuple[pd.DataFrame, pd.Series]:
         ds = fetch_openml(name="boston", version=1, as_frame=True)
         df = ds.frame.copy()
         if "MEDV" not in df.columns:
-            # Sometimes the column is lowercase or named differently on mirrors
             for cand in ["medv", "target"]:
                 if cand in df.columns:
                     df.rename(columns={cand: "MEDV"}, inplace=True)
@@ -52,7 +51,7 @@ def try_load_boston(data_path: str) -> Tuple[pd.DataFrame, pd.Series]:
         y = df["MEDV"].copy()
         return X, y
     except Exception:
-        # Fallback to CSV
+        # Fallback to local CSV
         if not os.path.exists(data_path):
             raise FileNotFoundError(
                 f"OpenML fetch failed and local CSV not found at {data_path}.\n"
@@ -153,20 +152,19 @@ def main() -> None:
     set_global_seed(args.seed)
     print_versions()
 
-    # 1) Load data
+    # Load data
     X, y = try_load_boston(args.data_path)
     feature_names = list(X.columns)
     print(f"[Data] X shape: {X.shape}, y shape: {y.shape}")
 
-    # 2) Train/test split (no peeking at test during CV)
+    # train/test split
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.2, random_state=args.seed
     )
 
-    # 3) Preprocessing pipeline
+    # Preprocessing pipeline
     preprocessor = build_preprocessing(numeric_features=feature_names)
 
-    # 4) Baselines (quick sanity checks; not saved)
     for name, model in [
         ("linreg", LinearRegression()),
         ("rf", RandomForestRegressor(n_estimators=300, random_state=args.seed, n_jobs=-1)),
@@ -177,7 +175,6 @@ def main() -> None:
         metrics = evaluate_regression(y_test.to_numpy(), y_pred)
         print(f"[Baseline: {name}] MAE={metrics['MAE']:.3f}, R2={metrics['R2']:.3f}")
 
-    # 5) Tuned GBM (target model)
     if args.model == "xgb":
         gbm = XGBRegressor(**get_default_xgb_params(args.seed))
         param_grid = {
@@ -201,7 +198,6 @@ def main() -> None:
     pipe = Pipeline(steps=[("pre", preprocessor), ("model", gbm)])
 
     cv = KFold(n_splits=args.cv_folds, shuffle=True, random_state=args.seed)
-    # simpler, avoids sign confusion:
     scorer = "neg_mean_absolute_error"
 
     grid = GridSearchCV(
@@ -226,12 +222,10 @@ def main() -> None:
     cv_df = pd.DataFrame(grid.cv_results_)
     cv_df.to_csv(os.path.join(args.out_dir, "cv_results.csv"), index=False)
 
-    # 6) Final evaluation on test
     y_pred_test = best_pipe.predict(X_test)
     metrics = evaluate_regression(y_test.to_numpy(), y_pred_test)
     print(f"[Final] Test MAE={metrics['MAE']:.4f}, R2={metrics['R2']:.4f}")
 
-    # 7) Save artifacts
     model_path = os.path.join(args.out_dir, "best_model.pkl")
     joblib.dump(best_pipe, model_path)
 
@@ -241,7 +235,6 @@ def main() -> None:
     preds_path = os.path.join(args.out_dir, "predictions.csv")
     pd.DataFrame({"y_true": y_test, "y_pred": y_pred_test}).to_csv(preds_path, index=False)
 
-    # Residual plot for quick error analysis
     try:
         plot_residuals(
             y_test.to_numpy(),
