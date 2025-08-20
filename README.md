@@ -1,6 +1,6 @@
 # House Prices (Ames, LightGBM + FE + Stratified CV)
 
-An ** ML project** to practice a clean, reproducible workflow on the classic **Kaggle “House Prices: Advanced Regression Techniques”** dataset (Ames, Iowa).
+An ML project to practice a clean, reproducible workflow on the classic **Kaggle “House Prices: Advanced Regression Techniques”** dataset (Ames, Iowa).
 
 ## Current Kaggle Result
 
